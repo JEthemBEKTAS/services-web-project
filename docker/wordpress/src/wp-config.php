@@ -23,7 +23,7 @@ define( 'LOGGED_IN_SALT',   '[tq6deZ+z&N @+ #}I=6#L5l??@Z|Q@0$_l|c|qT4$AVQQL!mQX
 define( 'NONCE_SALT',       'ZGD|3;oRvFDf?iuQ&2jw0]EBVOQ))mZh/ ||k*::gE&IiK5kxK3h]cIFq>]K55do' );
 
 // Préfixe des tables
-\$table_prefix = 'wp_';
+$table_prefix = 'wp_';
 
 // Mode debug
 define( 'WP_DEBUG', false );

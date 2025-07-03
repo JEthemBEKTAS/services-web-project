@@ -1,0 +1,22 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-cloudns
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: jeanethem@hotmail.fr
+    privateKeySecretRef:
+      name: letsencrypt-cloudns-key
+    solvers:
+    - dns01:
+        webhook:
+          groupName: cert-manager.io
+          solverName: cloudns
+          config:
+            apiUserSecretRef:
+              name: cloudns-api
+              key: apiUser
+            apiPasswordSecretRef:
+              name: cloudns-api
+              key: apiPassword
