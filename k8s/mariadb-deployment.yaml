@@ -24,3 +24,10 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: root-password
+        volumeMounts:
+        - name: mariadb-data
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mariadb-data
+        persistentVolumeClaim:
+          claimName: mariadb-pvc

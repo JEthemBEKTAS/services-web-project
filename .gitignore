@@ -1,2 +1,7 @@
 certs/privkey.pem
 certs/fullchain.pem
+# Certificats et clés privées
+certs/
+
+# Secrets déclarés en YAML
+k8s/secrets-*.yaml
