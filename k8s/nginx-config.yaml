@@ -34,7 +34,6 @@ data:
     }
 kind: ConfigMap
 metadata:
-  annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
       {"apiVersion":"v1","data":{"nginx.conf":"user nginx;\nworker_processes auto;\nerror_log /var/log/nginx/error.log warn;\n\nevents { worker_connections 1024; }\n\nhttp {\n  include /etc/nginx/mime.types;\n  default_type application/octet-stream;\n  access_log /var/log/nginx/access.log;\n\n  server {\n    listen 80;\n    server_name test-services-web-project.cours-ethem.dns-dynamic.net;\n    return 301 https://$host$request_uri;\n  }\n\n  server {\n    listen 443 ssl;\n    server_name test-services-web-project.cours-ethem.dns-dynamic.net;\n\n    ssl_certificate      /etc/nginx/ssl/fullchain.pem;\n    ssl_certificate_key  /etc/nginx/ssl/privkey.pem;\n\n    location / {\n      proxy_pass http://wordpress-service:80;\n      proxy_set_header Host $http_host;\n      proxy_set_header X-Real-IP $remote_addr;\n    }\n  }\n}\n"},"kind":"ConfigMap","metadata":{"annotations":{},"creationTimestamp":"2025-07-02T20:17:10Z","name":"nginx-config","namespace":"default","resourceVersion":"659764","uid":"717139a3-9959-4ec0-9933-6a45994214f5"}}
   name: nginx-config
