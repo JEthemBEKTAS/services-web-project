@@ -13,14 +13,15 @@ define( 'DB_COLLATE',  '' );
 
 // Clés d'authentification uniques et salage
 // Générez-les sur https://api.wordpress.org/secret-key/1.1/salt/
-define( 'AUTH_KEY',         'YeE]f 6PoD=yDve8]$g:FlK-Q/?fnI$0iUG]k.@C_S.EH *nbFlB.-z(6suuc|!R' );
-define( 'SECURE_AUTH_KEY',  'PF!;tqI<>O7lUcjT=qcs/Raxy!p9j?:~n8 r7FiNN[c[&){X:ghm!C:}A] }PDwq' );
-define( 'LOGGED_IN_KEY',    '?aTpiSl1_~=vgK!t@DfZTw+lWM+0rgPENU_GdV4=8o|!rxh}ivqH+M@@x`^Mv.MD' );
-define( 'NONCE_KEY',        '5ZO{@[y;oar>N0-W>H(Dt?B5h0<0T-8h3<WdoLe5xo{XQSugD#D$q]ai[K^yhvBh' );
-define( 'AUTH_SALT',        'z9c7Qnx=P8W~-#wvxz%&owqE+kKrAa~ --0`jj%^@wwYQbY^p-|+,*>.it5F(23R' );
-define( 'SECURE_AUTH_SALT', '5irk9O3/AlJy#2fX~#-:,yv{Niinf3+bR0;svpZ2x({=mvYR;]<=~wFOh&L$d_J#' );
-define( 'LOGGED_IN_SALT',   '[tq6deZ+z&N @+ #}I=6#L5l??@Z|Q@0$_l|c|qT4$AVQQL!mQXRKLPjcZes4U,L' );
-define( 'NONCE_SALT',       'ZGD|3;oRvFDf?iuQ&2jw0]EBVOQ))mZh/ ||k*::gE&IiK5kxK3h]cIFq>]K55do' );
+// SALT WordPress injectées par Kubernetes via env
+define( 'AUTH_KEY',         getenv('AUTH_KEY') );
+define( 'SECURE_AUTH_KEY',  getenv('SECURE_AUTH_KEY') );
+define( 'LOGGED_IN_KEY',    getenv('LOGGED_IN_KEY') );
+define( 'NONCE_KEY',        getenv('NONCE_KEY') );
+define( 'AUTH_SALT',        getenv('AUTH_SALT') );
+define( 'SECURE_AUTH_SALT', getenv('SECURE_AUTH_SALT') );
+define( 'LOGGED_IN_SALT',   getenv('LOGGED_IN_SALT') );
+define( 'NONCE_SALT',       getenv('NONCE_SALT') );
 
 // Préfixe des tables
 $table_prefix = 'wp_';
