@@ -5,6 +5,6 @@ certs/
 k8s/secrets-*.yaml
 
 # éviter de commettre les manifests sensibles
-wordpress-salts.yaml
+k8s/wordpress-salts.yaml
 k8s/examples/
 
