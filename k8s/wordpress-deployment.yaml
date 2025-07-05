@@ -15,7 +15,6 @@ spec:
       containers:
       - name: wordpress
         image: docker.io/ethembektas/wordpress:latest
-        imagePullPolicy: Always
         ports:
         - containerPort: 80
         env:
@@ -72,3 +71,4 @@ spec:
             secretKeyRef:
               name: wordpress-salts
               key: NONCE_SALT
+        imagePullPolicy: Always
