@@ -31,7 +31,6 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: password
-
         # SALT WordPress injectés depuis le Secret "wordpress-salts"
         - name: AUTH_KEY
           valueFrom:
