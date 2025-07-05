@@ -1,7 +1,10 @@
-certs/privkey.pem
-certs/fullchain.pem
 # Certificats et clés privées
 certs/
 
 # Secrets déclarés en YAML
 k8s/secrets-*.yaml
+
+# éviter de commettre les manifests sensibles
+wordpress-salts.yaml
+k8s/examples/
+

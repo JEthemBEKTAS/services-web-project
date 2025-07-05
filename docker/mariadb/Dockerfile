@@ -5,8 +5,10 @@ COPY init/init.sql.tpl /docker-entrypoint-initdb.d/init.sql.tpl
 EXPOSE 3306
 
 # 2. Installer gettext-base (pour envsubst) et générer init.sql
-RUN apt-get update && apt-get install -y gettext-base \
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends gettext-base \
  && envsubst '${MYSQL_ROOT_PASSWORD}' \
-    < /docker-entrypoint-initdb.d/init.sql.tpl \
-    > /docker-entrypoint-initdb.d/init.sql \
- && rm /docker-entrypoint-initdb.d/init.sql.tpl
+      < /docker-entrypoint-initdb.d/init.sql.tpl \
+      > /docker-entrypoint-initdb.d/init.sql \
+ && rm /docker-entrypoint-initdb.d/init.sql.tpl \
+ && rm -rf /var/lib/apt/lists/*
