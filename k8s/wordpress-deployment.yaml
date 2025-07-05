@@ -72,3 +72,4 @@ spec:
             secretKeyRef:
               name: wordpress-salts
               key: NONCE_SALT
+        restartPolicy: Always
