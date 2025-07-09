@@ -1,31 +1,35 @@
 provider "aws" {
-  region = "eu-west-1"
+  region = var.aws_region
 }
 
 resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
-}
-
-resource "aws_subnet" "subnet" {
-  count                   = 2
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  cidr_block = var.vpc_cidr
 }
 
 data "aws_availability_zones" "available" {}
 
-module "eks" {
-  source          = "terraform-aws-modules/eks/aws"
-  cluster_name    = "services-web-cluster"
-  cluster_version = "1.24"
-  vpc_id          = aws_vpc.main.id
-  subnets         = aws_subnet.subnet[*].id
+resource "aws_subnet" "subnet" {
+  count             = length(var.public_subnets)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.public_subnets[count.index]
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+}
 
-  node_groups = {
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.0"
+
+  cluster_name    = var.cluster_name
+  cluster_version = var.cluster_version
+
+  vpc_id     = aws_vpc.main.id
+  subnet_ids = aws_subnet.subnet[*].id
+
+  eks_managed_node_groups = {
     workers = {
-      desired_capacity = 2
-      instance_type    = "t3.medium"
+      desired_capacity = var.node_group_desired_capacity
+      instance_types   = [var.node_group_instance_type]
+      subnet_ids       = aws_subnet.subnet[*].id
     }
   }
 }
