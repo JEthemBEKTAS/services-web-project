@@ -8,3 +8,4 @@ k8s/secrets-*.yaml
 k8s/wordpress-salts.yaml
 k8s/examples/
 
+terraform/.terraform/
