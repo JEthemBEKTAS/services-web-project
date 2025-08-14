@@ -5,8 +5,6 @@ metadata:
   labels:
     app: mariadb
 spec:
-  strategy:
-    type: Recreate
   replicas: {{ .Values.replicaCount.mariadb }}
   selector:
     matchLabels:
@@ -16,7 +14,6 @@ spec:
       labels:
         app: mariadb
     spec:
-      serviceAccountName: {{ include "webproject.serviceAccountName" . }}
       containers:
       - name: mariadb
         image: {{ printf "%s/%s" .Values.image.registry .Values.image.mariadb }}
@@ -29,20 +26,6 @@ spec:
             secretKeyRef:
               name: {{ .Values.dbCredentials.name }}
               key: root-password
-        livenessProbe:
-          exec:
-            command: ["bash","-lc","mysqladmin ping -h 127.0.0.1 -p\"$MYSQL_ROOT_PASSWORD\""]
-          initialDelaySeconds: 30
-          periodSeconds: 15
-        readinessProbe:
-          exec:
-            command: ["bash","-lc","mysql -h 127.0.0.1 -uroot -p\"$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1'"]
-          initialDelaySeconds: 20
-          periodSeconds: 10
-        {{- with .Values.resources.mariadb }}
-        resources:
-{{ toYaml . | indent 10 }}
-        {{- end }}
         volumeMounts:
         - name: mariadb-data
           mountPath: /var/lib/mysql

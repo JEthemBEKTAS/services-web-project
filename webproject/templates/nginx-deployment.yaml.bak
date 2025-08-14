@@ -14,7 +14,6 @@ spec:
       labels:
         app: nginx
     spec:
-      serviceAccountName: {{ include "webproject.serviceAccountName" . }}
       containers:
       - name: nginx
         image: {{ printf "%s/%s" .Values.image.registry .Values.image.nginx }}
@@ -22,22 +21,6 @@ spec:
         ports:
         - containerPort: 80
         - containerPort: 443
-        livenessProbe:
-          httpGet:
-            path: /wp-admin/install.php
-            port: 80
-          initialDelaySeconds: 10
-          periodSeconds: 15
-        readinessProbe:
-          httpGet:
-            path: /wp-admin/install.php
-            port: 80
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        {{- with .Values.resources.nginx }}
-        resources:
-{{ toYaml . | indent 10 }}
-        {{- end }}
         volumeMounts:
         - name: nginx-config
           mountPath: /etc/nginx/nginx.conf

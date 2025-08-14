@@ -1,52 +1,44 @@
-# Domaine utilisé en local (résolu via /etc/hosts)
+# webproject/values.local.yaml
+# ----------------------------
+# Spécifique au poste local / cluster k3s/microk8s/kind
+
+# Domaine local → /etc/hosts
 domain: test-services-web-project.cours-ethem.dns-dynamic.net
 
-# Désactive l'ancien Nginx "edge" (on passe à Ingress)
-nginx:
-  enabled: false
-
-# Active l'Ingress (même objet que sur AWS)
-ingress:
-  enabled: true
-  annotations: {}
-  hosts:
-    - host: test-services-web-project.cours-ethem.dns-dynamic.net
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: webproject-tls
-      hosts:
-        - test-services-web-project.cours-ethem.dns-dynamic.net
-
-# Certificats : self-signed en local via cert-manager
-acme:
-  enabled: false
-
-tls:
-  selfsigned:
-    enabled: true
-    secretName: webproject-tls
-
-# WordPress : 1 réplica sans RWX (local)
+# Réplicas : pas de RWX local => 1 seul WordPress (cohérent et stable)
 replicaCount:
   mariadb: 1
-  wordpress: 1
-  nginx: 0
+  wordpress: 1      # <= local
+  nginx: 2
 
-wordpress:
-  persistence:
-    enabled: false    # pas d'EFS en local
-
-# Secrets créés par le chart en local
-secrets:
-  createDbCredentials: true
-  createWordpressSalts: true
-  createCloudnsApi: false  # inutile en local
-
-# NodePort pas utilisé en mode Ingress, mais on les garde si besoin
-service:
-  type: ClusterIP
+# Exposition : NodePort en local (en AWS on passera via Ingress/NLB/ALB)
+nginxService:
+  type: NodePort
   nodePort:
     http: 30080
     https: 30443
+
+# TLS local : self-signed depuis le chart (déjà présent dans templates/secrets-nginx-ssl.yaml)
+ssl:
+  secretName: nginx-ssl
+
+# Désactive ACME/cert-manager en local
+acme:
+  enabled: false
+
+# ServiceAccount (on l’utilise dans les Deployments)
+serviceAccount:
+  create: true
+  name: webproject
+
+# (Optionnel) Ressources légères pour éviter le throttle en local
+resources:
+  wordpress:
+    requests: { cpu: "50m", memory: "128Mi" }
+    limits:   { cpu: "500m", memory: "512Mi" }
+  nginx:
+    requests: { cpu: "50m", memory: "64Mi" }
+    limits:   { cpu: "500m", memory: "256Mi" }
+  mariadb:
+    requests: { cpu: "100m", memory: "256Mi" }
+    limits:   { cpu: "1", memory: "1Gi" }

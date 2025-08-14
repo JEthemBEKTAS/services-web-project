@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: nginx-service
 spec:
-  type: NodePort
+  type: {{ .Values.nginxService.type | default "NodePort" }}
   selector:
     app: nginx
   ports:
@@ -11,9 +11,13 @@ spec:
     protocol: TCP
     port: 80
     targetPort: 80
-    nodePort: {{ .Values.service.nodePort.http }}
+    {{- if eq (.Values.nginxService.type | default "NodePort") "NodePort" }}
+    nodePort: {{ .Values.nginxService.nodePort.http }}
+    {{- end }}
   - name: https
     protocol: TCP
     port: 443
     targetPort: 443
-    nodePort: {{ .Values.service.nodePort.https }}
+    {{- if eq (.Values.nginxService.type | default "NodePort") "NodePort" }}
+    nodePort: {{ .Values.nginxService.nodePort.https }}
+    {{- end }}
