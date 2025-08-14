@@ -23,12 +23,19 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 3306
+
         env:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
               name: {{ .Values.dbCredentials.name }}
               key: root-password
+        - name: MYSQL_WP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.dbCredentials.name }}
+              key: wp-password
+
         livenessProbe:
           exec:
             command: ["bash","-lc","mysqladmin ping -h 127.0.0.1 -p\"$MYSQL_ROOT_PASSWORD\""]
@@ -39,10 +46,12 @@ spec:
             command: ["bash","-lc","mysql -h 127.0.0.1 -uroot -p\"$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1'"]
           initialDelaySeconds: 20
           periodSeconds: 10
+
         {{- with .Values.resources.mariadb }}
         resources:
 {{ toYaml . | indent 10 }}
         {{- end }}
+
         volumeMounts:
         - name: mariadb-data
           mountPath: /var/lib/mysql

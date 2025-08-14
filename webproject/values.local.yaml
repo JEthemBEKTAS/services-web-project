@@ -20,6 +20,7 @@ nginxService:
 
 # TLS local : self-signed depuis le chart (déjà présent dans templates/secrets-nginx-ssl.yaml)
 ssl:
+  fromFiles: true
   secretName: nginx-ssl
 
 # Désactive ACME/cert-manager en local

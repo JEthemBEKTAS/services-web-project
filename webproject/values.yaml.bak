@@ -23,7 +23,6 @@ mariadb:
 
 # 6. DB credentials secret
 dbCredentials:
-  wpPassword: motdepasse_wp
   name: db-credentials
   username: wp_user
   password: motdepasse_securise
@@ -79,6 +78,16 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
 # ----------------------------------------------------------------------------
 
+
+# ----------------------------------------------------------------------
+# Service
+service:
+  type: NodePort
+  port: 80
+  nodePort:
+    http: 30080
+    https: 30443
+# ----------------------------------------------------------------------
 
 
 # Secret WordPress salts
