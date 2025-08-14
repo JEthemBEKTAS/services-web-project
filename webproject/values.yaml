@@ -16,12 +16,6 @@ image:
   wordpress: wordpress:latest
   nginx: nginx:latest
 
-# 4. Service NodePorts
-service:
-  nodePort:
-    http: 30080
-    https: 30443
-
 # 5. MariaDB PVC
 mariadb:
   storageClass: local-path
