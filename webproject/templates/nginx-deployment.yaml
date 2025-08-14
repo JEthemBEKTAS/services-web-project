@@ -24,16 +24,18 @@ spec:
         - containerPort: 443
         livenessProbe:
           httpGet:
-            path: /wp-admin/install.php
+            path: /healthz
             port: 80
           initialDelaySeconds: 10
           periodSeconds: 15
+          timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            path: /wp-admin/install.php
+            path: /healthz
             port: 80
           initialDelaySeconds: 5
           periodSeconds: 10
+          timeoutSeconds: 5
         {{- with .Values.resources.nginx }}
         resources:
 {{ toYaml . | indent 10 }}
