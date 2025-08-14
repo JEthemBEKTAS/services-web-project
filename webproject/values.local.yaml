@@ -1,0 +1,52 @@
+# Domaine utilisé en local (résolu via /etc/hosts)
+domain: test-services-web-project.cours-ethem.dns-dynamic.net
+
+# Désactive l'ancien Nginx "edge" (on passe à Ingress)
+nginx:
+  enabled: false
+
+# Active l'Ingress (même objet que sur AWS)
+ingress:
+  enabled: true
+  annotations: {}
+  hosts:
+    - host: test-services-web-project.cours-ethem.dns-dynamic.net
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: webproject-tls
+      hosts:
+        - test-services-web-project.cours-ethem.dns-dynamic.net
+
+# Certificats : self-signed en local via cert-manager
+acme:
+  enabled: false
+
+tls:
+  selfsigned:
+    enabled: true
+    secretName: webproject-tls
+
+# WordPress : 1 réplica sans RWX (local)
+replicaCount:
+  mariadb: 1
+  wordpress: 1
+  nginx: 0
+
+wordpress:
+  persistence:
+    enabled: false    # pas d'EFS en local
+
+# Secrets créés par le chart en local
+secrets:
+  createDbCredentials: true
+  createWordpressSalts: true
+  createCloudnsApi: false  # inutile en local
+
+# NodePort pas utilisé en mode Ingress, mais on les garde si besoin
+service:
+  type: ClusterIP
+  nodePort:
+    http: 30080
+    https: 30443
