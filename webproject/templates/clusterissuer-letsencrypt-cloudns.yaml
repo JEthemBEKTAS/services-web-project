@@ -1,0 +1,24 @@
+{{- if .Values.acme.enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.acme.clusterIssuerName }}
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: {{ .Values.acme.email | quote }}
+    privateKeySecretRef:
+      name: {{ .Values.acme.privateKeySecret }}
+    solvers:
+      - dns01:
+          webhook:
+            groupName: cert-manager.io
+            solverName: cloudns
+            config:
+              apiUserSecretRef:
+                name: {{ .Values.cloudns.apiUserSecret }}
+                key: apiUser
+              apiPasswordSecretRef:
+                name: {{ .Values.cloudns.apiUserSecret }}
+                key: {{ .Values.cloudns.apiPasswordKey }}
+{{- end }}

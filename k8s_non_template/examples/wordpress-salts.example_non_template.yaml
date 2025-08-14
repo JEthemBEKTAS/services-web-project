@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wordpress-salts
+type: Opaque
+stringData:
+  AUTH_KEY:         "<VOTRE_AUTH_KEY>"
+  SECURE_AUTH_KEY:  "<VOTRE_SECURE_AUTH_KEY>"
+  LOGGED_IN_KEY:    "<VOTRE_LOGGED_IN_KEY>"
+  NONCE_KEY:        "<VOTRE_NONCE_KEY>"
+  AUTH_SALT:        "<VOTRE_AUTH_SALT>"
+  SECURE_AUTH_SALT: "<VOTRE_SECURE_AUTH_SALT>"
+  LOGGED_IN_SALT:   "<VOTRE_LOGGED_IN_SALT>"
+  NONCE_SALT:       "<VOTRE_NONCE_SALT>"

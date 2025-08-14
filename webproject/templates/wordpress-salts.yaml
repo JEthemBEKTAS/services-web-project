@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wordpress-salts
+type: Opaque
+stringData:
+  AUTH_KEY:         "{{ randAlphaNum 32 }}"
+  SECURE_AUTH_KEY:  "{{ randAlphaNum 32 }}"
+  LOGGED_IN_KEY:    "{{ randAlphaNum 32 }}"
+  NONCE_KEY:        "{{ randAlphaNum 32 }}"
+  AUTH_SALT:        "{{ randAlphaNum 32 }}"
+  SECURE_AUTH_SALT: "{{ randAlphaNum 32 }}"
+  LOGGED_IN_SALT:   "{{ randAlphaNum 32 }}"
+  NONCE_SALT:       "{{ randAlphaNum 32 }}"
