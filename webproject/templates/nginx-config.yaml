@@ -11,11 +11,12 @@ data:
     events { worker_connections 1024; }
 
     http {
+    server_tokens off;
       include /etc/nginx/mime.types;
       default_type application/octet-stream;
       access_log /var/log/nginx/access.log;
 
-      # --- HTTP: /healthz => 200 ; le reste redirige vers HTTPS
+      # --- HTTP : /healthz => 200 ; le reste redirige vers HTTPS
       server {
         listen 80;
         server_name {{ .Values.domain }} _;
@@ -30,9 +31,9 @@ data:
         }
       }
 
-      # --- HTTPS: /healthz => 200 (si la probe suit une 301)
+      # --- HTTPS : vhost principal
       server {
-        listen 443 ssl default_server;
+        listen 443 ssl;
         server_name {{ .Values.domain }} _;
 
         ssl_certificate      /etc/nginx/ssl/fullchain.pem;
@@ -40,12 +41,16 @@ data:
         ssl_session_cache    shared:SSL:1m;
         ssl_session_timeout  10m;
 
-        # Headers de sécurité
+        # Headers sécurité (non bloquants en dev)
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-Frame-Options "SAMEORIGIN" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-        # HSTS: en local, tu peux commenter si certif auto-signé
-        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        # HSTS à activer en prod uniquement avec un vrai FQDN + cert publics
+        # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+        # Supprimer les entêtes bavards de l'amont (Apache/PHP)
+        proxy_hide_header X-Powered-By;
+        proxy_hide_header Server;
 
         location = /healthz {
           return 200 'ok';
@@ -58,7 +63,6 @@ data:
           proxy_set_header        X-Real-IP         $remote_addr;
           proxy_set_header        X-Forwarded-For   $proxy_add_x_forwarded_for;
           proxy_set_header        X-Forwarded-Proto $scheme;
-          proxy_hide_header       X-Powered-By;
         }
       }
     }
