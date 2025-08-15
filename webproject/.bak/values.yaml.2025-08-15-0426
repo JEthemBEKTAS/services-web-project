@@ -27,7 +27,6 @@ dbCredentials:
   name: db-credentials
   username: wp_user
   password: motdepasse_securise
-  rootPassword: change_me_root   # recommandé (différent de 'password')
 
 # 7. ssl certs secret
 ssl:

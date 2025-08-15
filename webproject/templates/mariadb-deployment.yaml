@@ -25,27 +25,72 @@ spec:
         - containerPort: 3306
 
         env:
-        - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.dbCredentials.name }}
-              key: root-password
-        - name: MYSQL_WP_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.dbCredentials.name }}
-              key: wp-password
+          # Root password — expose les deux variantes pour compat image
+          - name: MARIADB_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: root-password
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: root-password
+
+          # Création DB + user à l'init (et compat MYSQL_*)
+          - name: MARIADB_DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: database
+          - name: MARIADB_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: username
+          - name: MARIADB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: password
+          - name: MYSQL_DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: database
+          - name: MYSQL_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: username
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: password
 
         livenessProbe:
           exec:
-            command: ["bash","-lc","mysqladmin ping -h 127.0.0.1 -p\"$MYSQL_ROOT_PASSWORD\""]
+            command:
+              - bash
+              - -lc
+              - mysqladmin ping -h 127.0.0.1 -p"${MARIADB_ROOT_PASSWORD:-$MYSQL_ROOT_PASSWORD}"
           initialDelaySeconds: 30
           periodSeconds: 15
+          timeoutSeconds: 2
+          failureThreshold: 5
+
         readinessProbe:
           exec:
-            command: ["bash","-lc","mysql -h 127.0.0.1 -uroot -p\"$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1'"]
+            command:
+              - bash
+              - -lc
+              - mysql -h 127.0.0.1 -uroot -p"${MARIADB_ROOT_PASSWORD:-$MYSQL_ROOT_PASSWORD}" -e 'SELECT 1'
           initialDelaySeconds: 20
           periodSeconds: 10
+          timeoutSeconds: 2
+          failureThreshold: 6
+
 
         {{- with .Values.resources.mariadb }}
         resources:
