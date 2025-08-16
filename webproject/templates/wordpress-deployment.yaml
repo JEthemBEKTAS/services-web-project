@@ -2,76 +2,51 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: wordpress-deployment
-  labels:
-    app: wordpress
+  labels: { app: wordpress }
 spec:
-  replicas: {{ .Values.replicaCount.wordpress }}
+  replicas: {{ default 1 .Values.replicaCount.wordpress }}
   selector:
-    matchLabels:
-      app: wordpress
+    matchLabels: { app: wordpress }
   template:
     metadata:
-      labels:
-        app: wordpress
+      labels: { app: wordpress }
     spec:
       serviceAccountName: {{ include "webproject.serviceAccountName" . }}
       containers:
       - name: wordpress
         image: {{ printf "%s/%s" .Values.image.registry .Values.image.wordpress }}
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 80
+          - containerPort: 80
         env:
-        - name: WORDPRESS_DB_HOST
-          value: mariadb-service:3306
-        - name: WORDPRESS_DB_USER
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.dbCredentials.name }}
-              key: username
-        - name: WORDPRESS_DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.dbCredentials.name }}
-              key: password
-        - name: WORDPRESS_DB_NAME
-          valueFrom:
-            secretKeyRef:
-              name: db-credentials
-              key: database
-        - name: AUTH_KEY
-          valueFrom: { secretKeyRef: { name: wordpress-salts, key: AUTH_KEY } }
-        - name: SECURE_AUTH_KEY
-          valueFrom: { secretKeyRef: { name: wordpress-salts, key: SECURE_AUTH_KEY } }
-        - name: LOGGED_IN_KEY
-          valueFrom: { secretKeyRef: { name: wordpress-salts, key: LOGGED_IN_KEY } }
-        - name: NONCE_KEY
-          valueFrom: { secretKeyRef: { name: wordpress-salts, key: NONCE_KEY } }
-        - name: AUTH_SALT
-          valueFrom: { secretKeyRef: { name: wordpress-salts, key: AUTH_SALT } }
-        - name: SECURE_AUTH_SALT
-          valueFrom: { secretKeyRef: { name: wordpress-salts, key: SECURE_AUTH_SALT } }
-        - name: LOGGED_IN_SALT
-          valueFrom: { secretKeyRef: { name: wordpress-salts, key: LOGGED_IN_SALT } }
-        - name: NONCE_SALT
-          valueFrom: { secretKeyRef: { name: wordpress-salts, key: NONCE_SALT } }
-        livenessProbe:
-          httpGet:
-            path: /wp-login.php
-            port: 80
-          initialDelaySeconds: 20
-          periodSeconds: 15
-          timeoutSeconds: 5
-          failureThreshold: 6
-        readinessProbe:
-          httpGet:
-            path: /wp-login.php
-            port: 80
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 3
-          failureThreshold: 6
-        {{- with .Values.resources.wordpress }}
+          - name: WORDPRESS_DB_HOST
+            value: "mariadb-service:3306"
+          - name: WORDPRESS_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.dbCredentials.name }}
+                key: username
+          - name: WORDPRESS_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.dbCredentials.name }}
+                key: password
+          - name: WORDPRESS_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.dbCredentials.name }}
+                key: database
+        {{- with (index .Values "resources" "wordpress") }}
         resources:
 {{ toYaml . | indent 10 }}
         {{- end }}
+        readinessProbe:
+          httpGet: { path: "/", port: 80 }
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet: { path: "/", port: 80 }
+          initialDelaySeconds: 20
+          periodSeconds: 15
+          timeoutSeconds: 5

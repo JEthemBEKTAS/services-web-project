@@ -1,13 +1,29 @@
-{{- if and .Values.acme.enabled .Values.ingress.enabled }}
+{{- if .Values.tls.enabled }}
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: {{ .Values.domain | replace "." "-" }}-tls
+  name: webproject-cert
+  namespace: default
 spec:
-  secretName: {{ .Values.ssl.secretName }}
+  secretName: {{ required "values.tls.secretName must be set" .Values.tls.secretName }}
+  commonName: {{ required "values.domain must be set" .Values.domain }}
+  dnsNames:
+    - {{ .Values.domain }}
+
+  # Depuis cert-manager v1.18, rotationPolicy=Always est le défaut ; on la force explicitement.
+  privateKey:
+    rotationPolicy: Always
+    size: 2048
+
+  {{- if eq .Values.tls.issuer "selfsigned" }}
   issuerRef:
     kind: ClusterIssuer
-    name: {{ .Values.acme.clusterIssuerName }}
-  dnsNames:
-  - {{ .Values.domain }}
+    name: selfsigned
+  {{- else if eq .Values.tls.issuer "acme" }}
+  issuerRef:
+    kind: ClusterIssuer
+    name: {{ required "acme.clusterIssuerName must be set when tls.issuer=acme" .Values.acme.clusterIssuerName }}
+  {{- else }}
+  {{- fail (printf "Unsupported tls.issuer value: %s (use 'selfsigned' or 'acme')" .Values.tls.issuer) }}
+  {{- end }}
 {{- end }}

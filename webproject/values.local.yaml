@@ -5,6 +5,16 @@
 # Domaine local → /etc/hosts
 domain: test-services-web-project.cours-ethem.dns-dynamic.net
 
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure,web
+    traefik.ingress.kubernetes.io/router.middlewares: default-redirect-https@kubernetescrd
+    traefik.ingress.kubernetes.io/router.tls: "true"
+  # Si ton template supporte le champ (en plus/à la place de l’annotation) :
+  # className: traefik
+
 # Réplicas : pas de RWX local => 1 seul WordPress (cohérent et stable)
 replicaCount:
   mariadb: 1
@@ -13,15 +23,16 @@ replicaCount:
 
 # Exposition : NodePort en local (en AWS on passera via Ingress/NLB/ALB)
 nginxService:
-  type: NodePort
+  type: ClusterIP
   nodePort:
     http: 30080
     https: 30443
 
 # TLS local : self-signed depuis le chart (déjà présent dans templates/secrets-nginx-ssl.yaml)
-ssl:
-  fromFiles: true
-  secretName: nginx-ssl
+tls:
+  enabled: true
+  issuer: selfsigned       # selfsigned en local
+  secretName: webproject-tls
 
 # Désactive ACME/cert-manager en local
 acme:

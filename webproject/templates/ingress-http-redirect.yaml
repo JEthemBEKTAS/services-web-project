@@ -1,0 +1,28 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webproject-redirect
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # Pas de TLS ici !
+    traefik.ingress.kubernetes.io/router.tls: "false"
+    # Redirection vers https via le Middleware (namespace-name@kubernetescrd)
+    traefik.ingress.kubernetes.io/router.middlewares: default-redirect-https@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: {{ .Values.domain | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              # Backend peu importe, la redirection intervient avant le proxy
+              service:
+                name: nginx-service
+                port:
+                  number: 80
+{{- end }}
