@@ -1,56 +1,37 @@
-# webproject/values.local.yaml
-# ----------------------------
-# Spécifique au poste local / cluster k3s/microk8s/kind
+domains:
+  a: blog1-services-web-project.cours-ethem.dns-dynamic.net
+  b: blog2-services-web-project.cours-ethem.dns-dynamic.net
 
-# Domaine local → /etc/hosts
-domain: test-services-web-project.cours-ethem.dns-dynamic.net
+secrets:
+  db:
+    root: "change_me_root"
 
-ingress:
-  enabled: true
-  annotations:
-    kubernetes.io/ingress.class: traefik
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure,web
-    traefik.ingress.kubernetes.io/router.middlewares: default-redirect-https@kubernetescrd
-    traefik.ingress.kubernetes.io/router.tls: "true"
-  # Si ton template supporte le champ (en plus/à la place de l’annotation) :
-  # className: traefik
+  wpA:
+    database: "wp_a"
+    username: "wp_a"
+    password: "CHANGE_ME_PASS_A"
 
-# Réplicas : pas de RWX local => 1 seul WordPress (cohérent et stable)
-replicaCount:
-  mariadb: 1
-  wordpress: 1      # <= local
-  nginx: 2
+  wpB:
+    database: "wp_b"
+    username: "wp_b"
+    password: "CHANGE_ME_PASS_B"
 
-# Exposition : NodePort en local (en AWS on passera via Ingress/NLB/ALB)
-nginxService:
-  type: ClusterIP
-  nodePort:
-    http: 30080
-    https: 30443
+  wpASalts:
+    AUTH_KEY: "A_xxx"
+    SECURE_AUTH_KEY: "A_xxx"
+    LOGGED_IN_KEY: "A_xxx"
+    NONCE_KEY: "A_xxx"
+    AUTH_SALT: "A_xxx"
+    SECURE_AUTH_SALT: "A_xxx"
+    LOGGED_IN_SALT: "A_xxx"
+    NONCE_SALT: "A_xxx"
 
-# TLS local : self-signed depuis le chart (déjà présent dans templates/secrets-nginx-ssl.yaml)
-tls:
-  enabled: true
-  issuer: selfsigned       # selfsigned en local
-  secretName: webproject-tls
-
-# Désactive ACME/cert-manager en local
-acme:
-  enabled: false
-
-# ServiceAccount (on l’utilise dans les Deployments)
-serviceAccount:
-  create: true
-  name: webproject
-
-# (Optionnel) Ressources légères pour éviter le throttle en local
-resources:
-  wordpress:
-    requests: { cpu: "50m", memory: "128Mi" }
-    limits:   { cpu: "500m", memory: "512Mi" }
-  nginx:
-    requests: { cpu: "50m", memory: "64Mi" }
-    limits:   { cpu: "500m", memory: "256Mi" }
-  mariadb:
-    requests: { cpu: "100m", memory: "256Mi" }
-    limits:   { cpu: "1", memory: "1Gi" }
+  wpBSalts:
+    AUTH_KEY: "B_xxx"
+    SECURE_AUTH_KEY: "B_xxx"
+    LOGGED_IN_KEY: "B_xxx"
+    NONCE_KEY: "B_xxx"
+    AUTH_SALT: "B_xxx"
+    SECURE_AUTH_SALT: "B_xxx"
+    LOGGED_IN_SALT: "B_xxx"
+    NONCE_SALT: "B_xxx"

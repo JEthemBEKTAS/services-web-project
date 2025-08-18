@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-a-config
+data:
+  index.html: |
+    <html><body><h1>nginx-a</h1></body></html>
+  healthz: |
+    ok

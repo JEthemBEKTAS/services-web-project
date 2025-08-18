@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "webproject.fullname" . }}-test-db-ready
+  annotations:
+    "helm.sh/hook": test
+spec:
+  restartPolicy: Never
+  containers:
+  - name: check
+    image: {{ .Values.tooling.mariadbCliImage }}
+    command: ["/bin/sh","-lc"]
+    env:
+      - name: ROOT_PWD
+        valueFrom:
+          secretKeyRef:
+            name: {{ include "webproject.fullname" . }}-db-root
+            key: root-password
+      - name: A_DB
+        valueFrom:
+          secretKeyRef:
+            name: {{ include "webproject.fullname" . }}-db-a-credentials
+            key: database
+      - name: B_DB
+        valueFrom:
+          secretKeyRef:
+            name: {{ include "webproject.fullname" . }}-db-b-credentials
+            key: database
+    args:
+      - |
+        set -e
+        until mysqladmin ping -h mariadb-service -uroot -p"${ROOT_PWD}" --silent; do sleep 2; done
+        mysql -h mariadb-service -uroot -p"${ROOT_PWD}" -e "SHOW DATABASES LIKE '${A_DB}';" | grep -q "${A_DB}"
+        mysql -h mariadb-service -uroot -p"${ROOT_PWD}" -e "SHOW DATABASES LIKE '${B_DB}';" | grep -q "${B_DB}"
+        echo "A_DB and B_DB exist."

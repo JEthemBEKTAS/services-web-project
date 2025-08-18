@@ -1,0 +1,43 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webproject-a
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  {{- if .Values.tls.enabled }}
+  tls:
+    - hosts: [ "{{ .Values.domains.a }}" ]
+      secretName: {{ default (printf "%s-a-tls" (include "webproject.fullname" .)) .Values.tls.secretNameA }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.domains.a }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: wordpress-a-service, port: { number: 80 } }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webproject-b
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  {{- if .Values.tls.enabled }}
+  tls:
+    - hosts: [ "{{ .Values.domains.b }}" ]
+      secretName: {{ default (printf "%s-b-tls" (include "webproject.fullname" .)) .Values.tls.secretNameB }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.domains.b }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: wordpress-b-service, port: { number: 80 } }
+{{- end }}

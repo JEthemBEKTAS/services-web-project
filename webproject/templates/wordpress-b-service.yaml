@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress-b-service
+  labels: { app: wordpress-b }
+spec:
+  type: ClusterIP
+  selector: { app: wordpress-b }
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

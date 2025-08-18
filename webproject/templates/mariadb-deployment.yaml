@@ -2,105 +2,45 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mariadb-deployment
-  labels:
-    app: mariadb
+  labels: { app: mariadb }
 spec:
-  strategy:
-    type: Recreate
   replicas: {{ .Values.replicaCount.mariadb }}
-  selector:
-    matchLabels:
-      app: mariadb
+  selector: { matchLabels: { app: mariadb } }
   template:
-    metadata:
-      labels:
-        app: mariadb
+    metadata: { labels: { app: mariadb } }
     spec:
       serviceAccountName: {{ include "webproject.serviceAccountName" . }}
       containers:
       - name: mariadb
         image: {{ printf "%s/%s" .Values.image.registry .Values.image.mariadb }}
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 3306
-
+        imagePullPolicy: IfNotPresent
+        ports: [ { containerPort: 3306, name: mysql } ]
         env:
-          # Root password — expose les deux variantes pour compat image
           - name: MARIADB_ROOT_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: db-credentials
-                key: root-password
-          - name: MYSQL_ROOT_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: db-credentials
-                key: root-password
-
-          # Création DB + user à l'init (et compat MYSQL_*)
-          - name: MARIADB_DATABASE
-            valueFrom:
-              secretKeyRef:
-                name: db-credentials
-                key: database
-          - name: MARIADB_USER
-            valueFrom:
-              secretKeyRef:
-                name: db-credentials
-                key: username
-          - name: MARIADB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: db-credentials
-                key: password
-          - name: MYSQL_DATABASE
-            valueFrom:
-              secretKeyRef:
-                name: db-credentials
-                key: database
-          - name: MYSQL_USER
-            valueFrom:
-              secretKeyRef:
-                name: db-credentials
-                key: username
-          - name: MYSQL_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: db-credentials
-                key: password
-
-        livenessProbe:
-          exec:
-            command:
-              - bash
-              - -lc
-              - mysqladmin ping -h 127.0.0.1 -p"${MARIADB_ROOT_PASSWORD:-$MYSQL_ROOT_PASSWORD}"
-          initialDelaySeconds: 30
-          periodSeconds: 15
-          timeoutSeconds: 2
-          failureThreshold: 5
-
-        readinessProbe:
-          exec:
-            command:
-              - bash
-              - -lc
-              - mysql -h 127.0.0.1 -uroot -p"${MARIADB_ROOT_PASSWORD:-$MYSQL_ROOT_PASSWORD}" -e 'SELECT 1'
-          initialDelaySeconds: 20
-          periodSeconds: 10
-          timeoutSeconds: 2
-          failureThreshold: 6
-
-
-        {{- with .Values.resources.mariadb }}
-        resources:
-{{ toYaml . | indent 10 }}
-        {{- end }}
-
+                name: {{ include "webproject.dbSecretName" . }}
+                key: DB_ROOT_PASSWORD
         volumeMounts:
-        - name: mariadb-data
-          mountPath: /var/lib/mysql
+          - name: mariadb-data
+            mountPath: /var/lib/mysql
+        startupProbe:
+          exec: { command: [ "sh", "-lc", "mysqladmin ping -h 127.0.0.1 -p\"${MARIADB_ROOT_PASSWORD}\"" ] }
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          failureThreshold: 60
+        readinessProbe:
+          exec: { command: [ "sh", "-lc", "mysql -h 127.0.0.1 -uroot -p\"${MARIADB_ROOT_PASSWORD}\" -e 'SELECT 1'" ] }
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+        livenessProbe:
+          exec: { command: [ "sh", "-lc", "mysqladmin ping -h 127.0.0.1 -p\"${MARIADB_ROOT_PASSWORD}\"" ] }
+          initialDelaySeconds: 45
+          periodSeconds: 15
+          timeoutSeconds: 3
+          failureThreshold: 5
       volumes:
-      - name: mariadb-data
-        persistentVolumeClaim:
-          claimName: mariadb-pvc
+        - name: mariadb-data
+          persistentVolumeClaim: { claimName: mariadb-pvc }

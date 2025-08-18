@@ -1,0 +1,22 @@
+{{- if and .Values.ingress.enabled .Values.tls.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webproject-b
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: [ {{ .Values.domains.b | quote }} ]
+      secretName: {{ include "webproject.fullname" . }}-b-tls
+  rules:
+    - host: {{ .Values.domains.b | quote }}
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service: { name: nginx-b-service, port: { number: 80 } }
+{{- end }}

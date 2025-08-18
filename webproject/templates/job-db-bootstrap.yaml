@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-bootstrap
+  labels: { app: mariadb }
+spec:
+  backoffLimit: 4
+  template:
+    metadata:
+      labels: { app: mariadb }
+    spec:
+      serviceAccountName: {{ include "webproject.serviceAccountName" . }}
+      restartPolicy: OnFailure
+      containers:
+      - name: init-db
+        image: {{ printf "%s/%s" .Values.image.registry .Values.image.mariadb }}
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - secretRef:
+              name: {{ include "webproject.fullname" . }}-db-credentials
+        command: ["sh","-lc"]
+        args:
+        - |
+          set -euo pipefail
+          # attend le service MariaDB
+          for i in $(seq 1 120); do
+            nc -z -w1 mariadb-service 3306 && break
+            sleep 1
+          done
+          echo "DB reachable"
+
+          mysql -hmariadb-service -uroot -p"$DB_ROOT_PASSWORD" <<'SQL'
+          CREATE DATABASE IF NOT EXISTS `${DB_A_NAME}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          CREATE USER IF NOT EXISTS '${DB_A_USER}'@'%' IDENTIFIED BY '${DB_A_PASSWORD}';
+          GRANT ALL ON `${DB_A_NAME}`.* TO '${DB_A_USER}'@'%';
+
+          CREATE DATABASE IF NOT EXISTS `${DB_B_NAME}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          CREATE USER IF NOT EXISTS '${DB_B_USER}'@'%' IDENTIFIED BY '${DB_B_PASSWORD}';
+          GRANT ALL ON `${DB_B_NAME}`.* TO '${DB_B_USER}'@'%';
+          FLUSH PRIVILEGES;
+          SQL

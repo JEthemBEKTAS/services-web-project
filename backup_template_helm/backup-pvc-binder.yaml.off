@@ -1,0 +1,26 @@
+{{- if and .Values.backup.enabled (eq .Values.backup.mode "pvc") .Values.backupBinder.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "webproject.fullname" . }}-backup-pvc-binder
+spec:
+  ttlSecondsAfterFinished: 120
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: binder
+        image: busybox:1.36
+        command: ["/bin/sh","-c"]
+        args:
+          - >
+            echo "binder: $(date)" > /backup/.binder && ls -la /backup && sleep 1;
+        volumeMounts:
+        - name: backup
+          mountPath: /backup
+      volumes:
+      - name: backup
+        persistentVolumeClaim:
+          claimName: {{ include "webproject.fullname" . }}-backup-pvc
+{{- end }}

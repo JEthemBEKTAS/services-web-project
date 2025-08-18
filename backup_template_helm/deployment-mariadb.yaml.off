@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb-deployment
+  labels: { app: mariadb }
+spec:
+  replicas: {{ .Values.replicaCount.mariadb }}
+  selector:
+    matchLabels: { app: mariadb }
+  template:
+    metadata:
+      labels: { app: mariadb }
+    spec:
+      serviceAccountName: {{ include "webproject.serviceAccountName" . }}
+      containers:
+      - name: mariadb
+        image: {{ printf "%s/%s" .Values.image.registry .Values.image.mariadb }}
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: MARIADB_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ default (printf "%s-db-root" (include "webproject.fullname" .)) .Values.db.rootSecretName }}
+                key: root-password
+        ports:
+          - containerPort: 3306
+            name: mysql
+
+        # Probes TCP -> aucune dépendance binaire
+        startupProbe:
+          tcpSocket: { port: 3306 }
+          periodSeconds: 1
+          failureThreshold: 600
+
+        readinessProbe:
+          tcpSocket: { port: 3306 }
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 12
+
+        livenessProbe:
+          tcpSocket: { port: 3306 }
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 6
+
+        volumeMounts:
+          - name: mariadb-data
+            mountPath: /var/lib/mysql
+      volumes:
+        - name: mariadb-data
+          persistentVolumeClaim:
+            claimName: mariadb-pvc

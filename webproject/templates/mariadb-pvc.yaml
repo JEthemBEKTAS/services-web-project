@@ -2,10 +2,10 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mariadb-pvc
+  labels: {{- include "webproject.labels" . | nindent 4 }}
 spec:
-  accessModes:
-  - ReadWriteOnce
-  storageClassName: {{ .Values.mariadb.storageClass }}
+  accessModes: [ "ReadWriteOnce" ]
+  storageClassName: {{ .Values.mariadb.storageClass | quote }}
   resources:
     requests:
-      storage: {{ .Values.mariadb.storage }}
+      storage: {{ .Values.mariadb.storage | quote }}

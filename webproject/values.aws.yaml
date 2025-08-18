@@ -1,0 +1,15 @@
+mariadb:
+  storageClass: gp3
+  storage: 20Gi
+
+domains:
+  a: blog1.example.com
+  b: blog2.example.com
+
+tls:
+  enabled: true
+  issuer: letsencrypt
+  secretNameA: ""
+  secretNameB: ""
+
+backup: { enabled: false }

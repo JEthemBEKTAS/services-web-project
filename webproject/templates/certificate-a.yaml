@@ -1,0 +1,15 @@
+{{- if .Values.tls.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "webproject.fullname" . }}-a-cert
+spec:
+  secretName: {{ include "webproject.fullname" . }}-a-tls
+  dnsNames: [ {{ .Values.domains.a | quote }} ]
+  privateKey: { rotationPolicy: Always, size: 2048 }
+  {{- if eq .Values.tls.issuer "selfsigned" }}
+  issuerRef: { kind: ClusterIssuer, name: selfsigned }
+  {{- else if eq .Values.tls.issuer "acme" }}
+  issuerRef: { kind: ClusterIssuer, name: {{ required "ACME ClusterIssuer required" .Values.acme.clusterIssuerName }} }
+  {{- else }}{{- fail (printf "Unsupported tls.issuer=%s" .Values.tls.issuer) }}{{- end }}
+{{- end }}

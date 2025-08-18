@@ -1,0 +1,23 @@
+{{- if .Values.tls.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "webproject.fullname" . }}-a-cert
+spec:
+  secretName: {{ default (printf "%s-a-tls" (include "webproject.fullname" .)) .Values.tls.secretNameA }}
+  dnsNames: [ "{{ .Values.domains.a }}" ]
+  issuerRef:
+    name: {{ .Values.tls.issuer }}
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "webproject.fullname" . }}-b-cert
+spec:
+  secretName: {{ default (printf "%s-b-tls" (include "webproject.fullname" .)) .Values.tls.secretNameB }}
+  dnsNames: [ "{{ .Values.domains.b }}" ]
+  issuerRef:
+    name: {{ .Values.tls.issuer }}
+    kind: ClusterIssuer
+{{- end }}

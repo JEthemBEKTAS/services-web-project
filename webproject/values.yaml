@@ -1,87 +1,51 @@
-# webproject/values.yaml
-
-# 1. Domain name
-domain: test-services-web-project.cours-ethem.dns-dynamic.net
-
-# 2. Replica counts
-replicaCount:
-  mariadb:   1
-  wordpress: 2
-  nginx:     2
-
-# 3. Image registry & names
 image:
   registry: docker.io/ethembektas
   mariadb: mariadb:latest
   wordpress: wordpress:latest
-  nginx: nginx:latest
 
-# 5. MariaDB PVC
-mariadb:
-  storageClass: local-path
-  storage: 10Gi
+replicaCount:
+  mariadb: 1
+  wordpress: 1
+  nginx: 2
 
-# 6. DB credentials secret
-dbCredentials:
-  wpPassword: motdepasse_wp
-  name: db-credentials
-  username: wp_user
-  password: motdepasse_securise
-  rootPassword: change_me_root   # recommandé (différent de 'password')
+secrets:
+  create: true   # le chart crée les 3 secrets s'il reçoit les valeurs nécessaires
 
-# 7. ssl certs secret
-ssl:
-  secretName: nginx-ssl
+  db:
+    root: ""     # RENSEIGNÉ AU DEPLOIEMENT (jamais commité)
 
-# 8. ACME / cert-manager
-acme:
-  enabled: false
-  clusterIssuerName: letsencrypt-cloudns
-  email: votremail@example.com
-  privateKeySecret: letsencrypt-cloudns-key
+  wpA:
+    database: "wp_a"
+    username: "wp_a"
+    password: "" # RENSEIGNÉ AU DEPLOIEMENT
 
-# 9. ClouDNS (ACME DNS-01)
-cloudns:
-  apiUserSecret: cloudns-api
-  apiUser: YOUR_CLOUDNS_USER
-  apiPassword: YOUR_CLOUDNS_PASSWORD
-  apiPasswordKey: apiPassword
+  wpB:
+    database: "wp_b"
+    username: "wp_b"
+    password: "" # RENSEIGNÉ AU DEPLOIEMENT
 
-# ----------------------------------------------------------------------------
-# Création du ServiceAccount
-serviceAccount:
-  create: true       # Crée un ServiceAccount si true
-  name: ""           # Laisse vide pour prendre le nom par défaut du chart
-# ----------------------------------------------------------------------------
+  # SALTS — "comme avant" :
+  # - si existingSecretName est NON vide : on NE crée PAS le secret, WP le référence tel quel
+  # - sinon : Helm crée/maintient le secret ; si déjà présent dans le cluster, il est réutilisé (lookup).
+  # - champs ci-dessous (AUTH_KEY, etc.) restent vides -> génération aléatoire via randAlphaNum
+  wpASalts:
+    existingSecretName: ""   # ex: "mon-secret-salts-a" pour réutiliser un secret déjà créé à la main
+    AUTH_KEY: ""
+    SECURE_AUTH_KEY: ""
+    LOGGED_IN_KEY: ""
+    NONCE_KEY: ""
+    AUTH_SALT: ""
+    SECURE_AUTH_SALT: ""
+    LOGGED_IN_SALT: ""
+    NONCE_SALT: ""
 
-# ----------------------------------------------------------------------------
-# Configuration de l’Ingress
-ingress:
-  enabled: false                     # Activer/désactiver l’Ingress
-  annotations: {}                    # Annotations Kubernetes
-  hosts:
-    - host: chart.example.com        # Nom de domaine principal
-      paths:
-        - path: /                   # Chemins à router
-          pathType: Prefix
-  tls: []                            # Exemple :
-  #   - secretName: chart-tls
-  #     hosts:
-  #       - chart.example.com
-# ----------------------------------------------------------------------------
-
-
-# ----------------------------------------------------------------------------
-# Horizontal Pod Autoscaler
-autoscaling:
-  enabled: false                # active le HPA
-  minReplicas: 1                # nb minimal de pods
-  maxReplicas: 5                # nb maximal de pods
-  targetCPUUtilizationPercentage: 80
-# ----------------------------------------------------------------------------
-
-
-
-# Secret WordPress salts
-wordpressSalts:
-  name: wordpress-salts
+  wpBSalts:
+    existingSecretName: ""
+    AUTH_KEY: ""
+    SECURE_AUTH_KEY: ""
+    LOGGED_IN_KEY: ""
+    NONCE_KEY: ""
+    AUTH_SALT: ""
+    SECURE_AUTH_SALT: ""
+    LOGGED_IN_SALT: ""
+    NONCE_SALT: ""

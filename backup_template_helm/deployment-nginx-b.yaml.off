@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-b-deployment
+  labels: { app: nginx-b }
+spec:
+  replicas: {{ .Values.replicaCount.nginx }}
+  selector:
+    matchLabels: { app: nginx-b }
+  template:
+    metadata:
+      labels: { app: nginx-b }
+    spec:
+      serviceAccountName: {{ include "webproject.serviceAccountName" . }}
+      containers:
+      - name: nginx
+        image: {{ printf "%s/%s" .Values.image.registry .Values.image.nginx }}
+        imagePullPolicy: IfNotPresent
+        ports: [ { name: http, containerPort: 80 } ]
+        readinessProbe:
+          httpGet: { path: "/", port: 80 }
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: { path: "/", port: 80 }
+          initialDelaySeconds: 20
+        volumeMounts:
+          - name: web
+            mountPath: /usr/share/nginx/html
+      volumes:
+        - name: web
+          configMap:
+            name: nginx-b-config
