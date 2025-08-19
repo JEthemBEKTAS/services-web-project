@@ -9,3 +9,4 @@ k8s/wordpress-salts.yaml
 k8s/examples/
 
 terraform/.terraform/
+webproject/secrets/*.yaml

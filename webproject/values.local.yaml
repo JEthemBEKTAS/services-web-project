@@ -28,6 +28,17 @@ nginxService:
     http: 30080
     https: 30443
 
+  
+
+dbCredentials:
+  name: db-credentials
+  source: file        # "file" => créer le Secret à partir de webproject/secrets/db-credentials.yaml
+                      # "external" => ne rien créer ; Secret déjà présent (AWS/ESO)
+
+
+
+
+
 # TLS local : self-signed depuis le chart (déjà présent dans templates/secrets-nginx-ssl.yaml)
 tls:
   enabled: true

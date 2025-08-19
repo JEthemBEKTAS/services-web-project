@@ -23,11 +23,9 @@ mariadb:
 
 # 6. DB credentials secret
 dbCredentials:
-  wpPassword: motdepasse_wp
   name: db-credentials
-  username: wp_user
-  password: motdepasse_securise
-  rootPassword: change_me_root   # recommandé (différent de 'password')
+  source: file        # "file" => créer le Secret à partir de webproject/secrets/db-credentials.yaml
+                      # "external" => ne rien créer ; Secret déjà présent (AWS/ESO)
 
 # 7. ssl certs secret
 ssl:

@@ -1,0 +1,16 @@
+{{- $name := (default "wordpress-salts" .Values.wordpressSalts.name) -}}
+{{- $ex := lookup "v1" "Secret" .Release.Namespace $name -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $name }}
+type: Opaque
+stringData:
+  AUTH_KEY:         {{ if $ex }}{{ index $ex.data "AUTH_KEY"         | b64dec | quote }}{{ else }}"{{ randAlphaNum 64 }}"{{ end }}
+  SECURE_AUTH_KEY:  {{ if $ex }}{{ index $ex.data "SECURE_AUTH_KEY"  | b64dec | quote }}{{ else }}"{{ randAlphaNum 64 }}"{{ end }}
+  LOGGED_IN_KEY:    {{ if $ex }}{{ index $ex.data "LOGGED_IN_KEY"    | b64dec | quote }}{{ else }}"{{ randAlphaNum 64 }}"{{ end }}
+  NONCE_KEY:        {{ if $ex }}{{ index $ex.data "NONCE_KEY"        | b64dec | quote }}{{ else }}"{{ randAlphaNum 64 }}"{{ end }}
+  AUTH_SALT:        {{ if $ex }}{{ index $ex.data "AUTH_SALT"        | b64dec | quote }}{{ else }}"{{ randAlphaNum 64 }}"{{ end }}
+  SECURE_AUTH_SALT: {{ if $ex }}{{ index $ex.data "SECURE_AUTH_SALT" | b64dec | quote }}{{ else }}"{{ randAlphaNum 64 }}"{{ end }}
+  LOGGED_IN_SALT:   {{ if $ex }}{{ index $ex.data "LOGGED_IN_SALT"   | b64dec | quote }}{{ else }}"{{ randAlphaNum 64 }}"{{ end }}
+  NONCE_SALT:       {{ if $ex }}{{ index $ex.data "NONCE_SALT"       | b64dec | quote }}{{ else }}"{{ randAlphaNum 64 }}"{{ end }}
