@@ -12,7 +12,7 @@ RET_DAYS=7    # modifiable en éditant le script
 
 # Récup infos DB depuis le Secret K8s créé par le chart
 USER=$(kubectl get secret db-credentials -n "$NS" -o jsonpath='{.data.username}' | base64 -d)
-PASS=$(kubectl get secret db-credentials -n "$NS" -o jsonpath='{.data.password}' | base64 -d)
+PASS=$(kubectl get secret db-credentials -n "$NS" -o jsonpath='{.data.wp-password}' | base64 -d)
 DB=$(kubectl get secret db-credentials -n "$NS" -o jsonpath='{.data.database}' | base64 -d)
 
 MDB=$(kubectl get pod -n "$NS" -l app=mariadb -o jsonpath='{.items[0].metadata.name}')

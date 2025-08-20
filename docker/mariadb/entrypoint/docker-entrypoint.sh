@@ -5,8 +5,8 @@ log() { echo "[entrypoint] $*"; }
 
 # Variables attendues (provenant du Secret via env du Pod)
 : "${MYSQL_DATABASE:?}"
-: "${MYSQL_WP_USER:?}"
-: "${MYSQL_WP_PASSWORD:?}"
+: "${MYSQL_USER:?}"
+: "${MYSQL_PASSWORD:?}"
 
 # 1) Génération du SQL AU PREMIER BOOT (dossier vide = init)
 if [ ! -d /var/lib/mysql/mysql ]; then

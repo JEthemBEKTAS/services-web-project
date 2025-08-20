@@ -13,7 +13,7 @@ fi
 [ -f "$FILE" ] || { echo "usage: $0 /chemin/vers/dump.sql.gz (ou rien pour le plus récent)"; exit 1; }
 
 USER=$(kubectl get secret db-credentials -n "$NS" -o jsonpath='{.data.username}' | base64 -d)
-PASS=$(kubectl get secret db-credentials -n "$NS" -o jsonpath='{.data.password}' | base64 -d)
+PASS=$(kubectl get secret db-credentials -n "$NS" -o jsonpath='{.data.wp-password}' | base64 -d)
 DB=$(kubectl get secret db-credentials -n "$NS" -o jsonpath='{.data.database}' | base64 -d)
 MDB=$(kubectl get pod -n "$NS" -l app=mariadb -o jsonpath='{.items[0].metadata.name}')
 
