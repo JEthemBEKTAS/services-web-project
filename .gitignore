@@ -10,3 +10,4 @@ k8s/examples/
 
 terraform/.terraform/
 webproject/secrets/*.yaml
+Backup_locale/save/

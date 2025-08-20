@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+NS="${NS:-default}"
+BASE="$HOME/project_unzip/services-web-project/Backup_locale"
+SAVE="$BASE/save"
+LOG="$BASE/test-$(date +%F_%H%M%S).log"
+
+mkdir -p "$SAVE"
+echo "[test] log -> $LOG"
+exec > >(tee -a "$LOG") 2>&1
+
+# 1) Récupérer les infos DB
+USER=$(kubectl get secret db-credentials -n "$NS" -o jsonpath='{.data.username}' | base64 -d)
+PASS=$(kubectl get secret db-credentials -n "$NS" -o jsonpath='{.data.password}' | base64 -d)
+DB=$(kubectl get secret db-credentials -n "$NS" -o jsonpath='{.data.database}' | base64 -d)
+MDB=$(kubectl get pod -n "$NS" -l app=mariadb -o jsonpath='{.items[0].metadata.name}')
+
+echo "[test] NS=$NS DB=$DB POD=$MDB"
+
+# 2) État initial: BEFORE_BACKUP
+kubectl exec -n "$NS" "$MDB" -- sh -lc "mysql -h 127.0.0.1 -u'$USER' -p'$PASS' '$DB' -e '
+DROP TABLE IF EXISTS __backup_probe;
+CREATE TABLE __backup_probe (k VARCHAR(32) PRIMARY KEY, v VARCHAR(255));
+INSERT INTO __backup_probe (k,v) VALUES (\"marker\",\"BEFORE_BACKUP\");
+SELECT * FROM __backup_probe;'"
+
+# 3) Sauvegarde
+"$BASE/backup-wp.sh"
+LAST_DUMP=$(ls -1t "$SAVE"/wpdb_${NS}_*.sql.gz | head -n1)
+[ -n "$LAST_DUMP" ] || { echo "[test] Aucun dump trouvé"; exit 1; }
+echo "[test] dump utilisé: $LAST_DUMP"
+
+# 4) Modifier les données → AFTER_BACKUP
+kubectl exec -n "$NS" "$MDB" -- sh -lc "mysql -h 127.0.0.1 -u'$USER' -p'$PASS' '$DB' -e '
+UPDATE __backup_probe SET v=\"AFTER_BACKUP\" WHERE k=\"marker\";
+SELECT * FROM __backup_probe;'"
+
+# 5) Restauration
+NS="$NS" "$BASE/restore-wp.sh" "$LAST_DUMP"
+
+# 6) Vérification finale
+RESULT=$(kubectl exec -n "$NS" "$MDB" -- sh -lc "mysql -N -B -h 127.0.0.1 -u'$USER' -p'$PASS' '$DB' -e 'SELECT v FROM __backup_probe WHERE k=\"marker\";'" )
+echo "[test] valeur après restore = '$RESULT'"
+
+if [[ "$RESULT" == "BEFORE_BACKUP" ]]; then
+  echo "[test] ✅ RESTORE_OK"
+  exit 0
+else
+  echo "[test] ❌ RESTORE_KO (attendu=BEFORE_BACKUP)"
+  exit 2
+fi
