@@ -23,7 +23,7 @@ spec:
           - name: WORDPRESS_DB_USER
             valueFrom: { secretKeyRef: { name: {{ .Values.dbCredentials.name | quote }}, key: username } }
           - name: WORDPRESS_DB_PASSWORD
-            valueFrom: { secretKeyRef: { name: {{ .Values.dbCredentials.name | quote }}, key: password } }
+            valueFrom: { secretKeyRef: { name: {{ .Values.dbCredentials.name | quote }}, key: wp-password } }
           - name: WORDPRESS_DB_NAME
             valueFrom: { secretKeyRef: { name: {{ .Values.dbCredentials.name | quote }}, key: database } }
 

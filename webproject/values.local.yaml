@@ -22,12 +22,6 @@ replicaCount:
   nginx: 2
 
 # Exposition : NodePort en local (en AWS on passera via Ingress/NLB/ALB)
-nginxService:
-  type: ClusterIP
-  nodePort:
-    http: 30080
-    https: 30443
-
   
 
 dbCredentials:

@@ -43,31 +43,33 @@ spec:
               secretKeyRef:
                 name: db-credentials
                 key: database
-          - name: MARIADB_USER
-            valueFrom:
-              secretKeyRef:
-                name: db-credentials
-                key: username
-          - name: MARIADB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: db-credentials
-                key: password
           - name: MYSQL_DATABASE
             valueFrom:
               secretKeyRef:
                 name: db-credentials
                 key: database
+
+          - name: MARIADB_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: username
           - name: MYSQL_USER
             valueFrom:
               secretKeyRef:
                 name: db-credentials
                 key: username
+
+          - name: MARIADB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: wp-password
           - name: MYSQL_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: db-credentials
-                key: password
+                key: wp-password
 
         livenessProbe:
           exec:
