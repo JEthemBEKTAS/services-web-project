@@ -1,61 +1,35 @@
-# webproject/values.local.yaml
-# ----------------------------
-# Spécifique au poste local / cluster k3s/microk8s/kind
-
-# Domaine local → /etc/hosts
 domain: test-services-web-project.cours-ethem.dns-dynamic.net
+
+replicaCount:
+  mariadb: 1
+  wordpress: 1
+
+# TLS local auto-signé
+tls:
+  enabled: true
+  issuer: selfsigned
+  secretName: webproject-tls
 
 ingress:
   enabled: true
+  className: traefik
   annotations:
     kubernetes.io/ingress.class: traefik
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure,web
-    traefik.ingress.kubernetes.io/router.middlewares: default-redirect-https@kubernetescrd
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
-  # Si ton template supporte le champ (en plus/à la place de l’annotation) :
-  # className: traefik
 
-# Réplicas : pas de RWX local => 1 seul WordPress (cohérent et stable)
-replicaCount:
-  mariadb: 1
-  wordpress: 1      # <= local
-  nginx: 2
-
-# Exposition : NodePort en local (en AWS on passera via Ingress/NLB/ALB)
-  
-
-dbCredentials:
-  name: db-credentials
-  source: file        # "file" => créer le Secret à partir de webproject/secrets/db-credentials.yaml
-                      # "external" => ne rien créer ; Secret déjà présent (AWS/ESO)
-
-
-
-
-
-# TLS local : self-signed depuis le chart (déjà présent dans templates/secrets-nginx-ssl.yaml)
-tls:
+# HPA léger en local
+autoscaling:
   enabled: true
-  issuer: selfsigned       # selfsigned en local
-  secretName: webproject-tls
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
 
-# Désactive ACME/cert-manager en local
-acme:
-  enabled: false
-
-# ServiceAccount (on l’utilise dans les Deployments)
-serviceAccount:
-  create: true
-  name: webproject
-
-# (Optionnel) Ressources légères pour éviter le throttle en local
+# Ressources un peu plus light en dev
 resources:
   wordpress:
-    requests: { cpu: "50m", memory: "128Mi" }
+    requests: { cpu: "100m", memory: "256Mi" }
     limits:   { cpu: "500m", memory: "512Mi" }
-  nginx:
-    requests: { cpu: "50m", memory: "64Mi" }
-    limits:   { cpu: "500m", memory: "256Mi" }
   mariadb:
     requests: { cpu: "100m", memory: "256Mi" }
     limits:   { cpu: "1", memory: "1Gi" }

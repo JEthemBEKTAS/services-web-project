@@ -48,3 +48,8 @@ spec:
 
         readinessProbe: { httpGet: { path: "/", port: 80 }, initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5 }
         livenessProbe:  { httpGet: { path: "/", port: 80 }, initialDelaySeconds: 20, periodSeconds: 15, timeoutSeconds: 5 }
+
+        {{- with .Values.resources.wordpress }}
+        resources:
+{{ toYaml . | indent 10 }}
+        {{- end }}

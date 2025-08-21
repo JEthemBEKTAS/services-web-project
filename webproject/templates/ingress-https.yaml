@@ -1,19 +1,21 @@
-{{- if and .Values.ingress.enabled .Values.tls.enabled }}
+{{- if .Values.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: webproject
-  namespace: default
+  namespace: {{ .Release.Namespace }}
   annotations:
-    kubernetes.io/ingress.class: traefik
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
+    {{- range $k, $v := .Values.ingress.annotations }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
 spec:
-  ingressClassName: traefik
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  {{- /* En local: cert-manager gère TLS via Secret; en ALB: TLS à l’ALB → pas de spec.tls */ -}}
+  {{- if and .Values.tls.enabled (ne .Values.ingress.className "alb") }}
   tls:
-    - hosts:
-        - {{ .Values.domain | quote }}
+    - hosts: [ {{ .Values.domain | quote }} ]
       secretName: {{ .Values.tls.secretName | quote }}
+  {{- end }}
   rules:
     - host: {{ .Values.domain | quote }}
       http:
@@ -22,7 +24,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: nginx-service
+                name: wordpress-service
                 port:
                   number: 80
 {{- end }}

@@ -1,82 +1,67 @@
-# webproject/values.yaml
-
-# 1. Domain name
+# Domaine commun
 domain: test-services-web-project.cours-ethem.dns-dynamic.net
 
-# 2. Replica counts
+# Réplicas : HPA gère WordPress → laisser 1 minimum
 replicaCount:
-  mariadb:   1
-  wordpress: 2
-  nginx:     2
+  mariadb: 1
+  wordpress: 1
 
 # 3. Image registry & names
 image:
   registry: docker.io/ethembektas
   mariadb: mariadb:latest
   wordpress: wordpress:latest
-  nginx: nginx:latest
 
-# 5. MariaDB PVC
+serviceAccount:
+  create: true
+  name: webproject
+
+# Ressources (HPA requiert des requests CPU)
+resources:
+  wordpress:
+    requests: { cpu: "100m", memory: "256Mi" }
+    limits:   { cpu: "500m", memory: "512Mi" }
+  mariadb:
+    requests: { cpu: "100m", memory: "256Mi" }
+    limits:   { cpu: "1", memory: "1Gi" }
+
+# MariaDB PVC
 mariadb:
   storageClass: local-path
   storage: 10Gi
 
-# 6. DB credentials secret
+# Secret DB (toujours créé depuis fichier local pour vos tests)
 dbCredentials:
   name: db-credentials
-  source: file        # "file" => créer le Secret à partir de webproject/secrets/db-credentials.yaml
-                      # "external" => ne rien créer ; Secret déjà présent (AWS/ESO)
+  source: file  # (en AWS on passera à "external")
 
-
-# 8. ACME / cert-manager
-acme:
-  enabled: false
-  clusterIssuerName: letsencrypt-cloudns
-  email: votremail@example.com
-  privateKeySecret: letsencrypt-cloudns-key
-
-# 9. ClouDNS (ACME DNS-01)
-cloudns:
-  apiUserSecret: cloudns-api
-  apiUser: YOUR_CLOUDNS_USER
-  apiPassword: YOUR_CLOUDNS_PASSWORD
-  apiPasswordKey: apiPassword
-
-# ----------------------------------------------------------------------------
-# Création du ServiceAccount
-serviceAccount:
-  create: true       # Crée un ServiceAccount si true
-  name: ""           # Laisse vide pour prendre le nom par défaut du chart
-# ----------------------------------------------------------------------------
-
-# ----------------------------------------------------------------------------
-# Configuration de l’Ingress
+# Ingress uniquement HTTPS (pas de redirection HTTP)
 ingress:
-  enabled: false                     # Activer/désactiver l’Ingress
-  annotations: {}                    # Annotations Kubernetes
-  hosts:
-    - host: chart.example.com        # Nom de domaine principal
-      paths:
-        - path: /                   # Chemins à router
-          pathType: Prefix
-  tls: []                            # Exemple :
-  #   - secretName: chart-tls
-  #     hosts:
-  #       - chart.example.com
-# ----------------------------------------------------------------------------
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
 
+# TLS actif (self-signed local ; ACME plus tard)
+tls:
+  enabled: true
+  issuer: selfsigned
+  secretName: webproject-tls
 
-# ----------------------------------------------------------------------------
-# Horizontal Pod Autoscaler
+# Autoscaling WordPress
 autoscaling:
-  enabled: false                # active le HPA
-  minReplicas: 1                # nb minimal de pods
-  maxReplicas: 5                # nb maximal de pods
-  targetCPUUtilizationPercentage: 80
-# ----------------------------------------------------------------------------
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
 
-
-
-# Secret WordPress salts
+# Salts WordPress
 wordpressSalts:
   name: wordpress-salts
+
+
+
+
+
+

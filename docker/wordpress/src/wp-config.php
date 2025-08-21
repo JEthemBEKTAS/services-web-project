@@ -34,4 +34,12 @@ if ( ! defined( 'ABSPATH' ) ) {
     define( 'ABSPATH', __DIR__ . '/' );
 }
 
+// --- Derrière un proxy TLS (Traefik) ---
+if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+    $_SERVER['HTTPS'] = 'on';
+}
+if (!defined('FORCE_SSL_ADMIN')) {
+    define('FORCE_SSL_ADMIN', true);
+}
+
 require_once ABSPATH . 'wp-settings.php';
