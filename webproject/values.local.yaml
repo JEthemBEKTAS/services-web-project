@@ -33,3 +33,15 @@ resources:
   mariadb:
     requests: { cpu: "100m", memory: "256Mi" }
     limits:   { cpu: "1", memory: "1Gi" }
+
+
+externalSecrets:
+  enabled: false
+
+database:
+  host: mariadb-service
+  port: 3306
+
+secrets:
+  db:    { name: db-credentials }
+  salts: { name: wordpress-salts }

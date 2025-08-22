@@ -17,18 +17,38 @@ spec:
         image: {{ printf "%s/%s" .Values.image.registry .Values.image.wordpress }}
         imagePullPolicy: IfNotPresent
         ports: [{ containerPort: 80 }]
+
+        {{- /* 1) Résolution des noms de secrets, agnostique source (local ou ESO/AWS) */ -}}
+        {{- $dbSecretName := (dig "secrets" "db"    "name" "" .Values) | default "db-credentials" -}}
+        {{- $saltName     := (dig "secrets" "salts" "name" "" .Values) | default "wordpress-salts" -}}
+
+        {{- /* 2) Hôte/port DB paramétrables (local = service, AWS = identique si DB in-cluster; sinon change host/port dans values.aws.yaml) */ -}}
+        {{- $dbHost := (dig "database" "host" "mariadb-service" .Values) -}}
+        {{- $dbPort := (dig "database" "port" 3306 .Values) -}}
+
         env:
           - name: WORDPRESS_DB_HOST
-            value: "mariadb-service:3306"
-          - name: WORDPRESS_DB_USER
-            valueFrom: { secretKeyRef: { name: {{ .Values.dbCredentials.name | quote }}, key: username } }
-          - name: WORDPRESS_DB_PASSWORD
-            valueFrom: { secretKeyRef: { name: {{ .Values.dbCredentials.name | quote }}, key: wp-password } }
-          - name: WORDPRESS_DB_NAME
-            valueFrom: { secretKeyRef: { name: {{ .Values.dbCredentials.name | quote }}, key: database } }
+            value: "{{ $dbHost }}:{{ $dbPort }}"
 
-          # --- SALTS WordPress (Secret rendu par Helm ci-dessus) ---
-          {{- $saltName := (default "wordpress-salts" .Values.wordpressSalts.name) }}
+          - name: WORDPRESS_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: {{ $dbSecretName | quote }}
+                key: username
+
+          - name: WORDPRESS_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $dbSecretName | quote }}
+                key: wp-password
+
+          - name: WORDPRESS_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: {{ $dbSecretName | quote }}
+                key: database
+
+          # --- SALTS WordPress (Secret local OU rendu par ESO en AWS) ---
           - name: AUTH_KEY
             valueFrom: { secretKeyRef: { name: {{ $saltName | quote }}, key: AUTH_KEY } }
           - name: SECURE_AUTH_KEY
@@ -46,8 +66,16 @@ spec:
           - name: NONCE_SALT
             valueFrom: { secretKeyRef: { name: {{ $saltName | quote }}, key: NONCE_SALT } }
 
-        readinessProbe: { httpGet: { path: "/", port: 80 }, initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5 }
-        livenessProbe:  { httpGet: { path: "/", port: 80 }, initialDelaySeconds: 20, periodSeconds: 15, timeoutSeconds: 5 }
+        readinessProbe:
+          httpGet: { path: "/", port: 80 }
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet: { path: "/", port: 80 }
+          initialDelaySeconds: 20
+          periodSeconds: 15
+          timeoutSeconds: 5
 
         {{- with .Values.resources.wordpress }}
         resources:

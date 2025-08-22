@@ -30,10 +30,6 @@ mariadb:
   storageClass: local-path
   storage: 10Gi
 
-# Secret DB (toujours créé depuis fichier local pour vos tests)
-dbCredentials:
-  name: db-credentials
-  source: file  # (en AWS on passera à "external")
 
 # Ingress uniquement HTTPS (pas de redirection HTTP)
 ingress:
@@ -56,11 +52,17 @@ autoscaling:
   maxReplicas: 5
   targetCPUUtilizationPercentage: 70
 
-# Salts WordPress
-wordpressSalts:
-  name: wordpress-salts
+# Salts WordPress secrets DB
+secrets:
+  db:
+    name: db-credentials
+  salts:
+    name: wordpress-salts
 
 
+externalSecrets:
+  enabled: false
+  region: ""   # non use en local
 
 
 

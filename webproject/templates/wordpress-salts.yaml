@@ -1,5 +1,6 @@
-{{- $name := (default "wordpress-salts" .Values.wordpressSalts.name) -}}
-{{- $ex := lookup "v1" "Secret" .Release.Namespace $name -}}
+{{- if not .Values.externalSecrets.enabled }}
+{{- $name := ( .Values.wordpressSalts.name | default "wordpress-salts" ) }}
+{{- $ex := (lookup "v1" "Secret" .Release.Namespace $name) }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -14,3 +15,4 @@ stringData:
   SECURE_AUTH_SALT: {{ if $ex }}{{ index $ex.data "SECURE_AUTH_SALT" | b64dec | quote }}{{ else }}"{{ randAlphaNum 64 }}"{{ end }}
   LOGGED_IN_SALT:   {{ if $ex }}{{ index $ex.data "LOGGED_IN_SALT"   | b64dec | quote }}{{ else }}"{{ randAlphaNum 64 }}"{{ end }}
   NONCE_SALT:       {{ if $ex }}{{ index $ex.data "NONCE_SALT"       | b64dec | quote }}{{ else }}"{{ randAlphaNum 64 }}"{{ end }}
+{{- end }}
