@@ -63,7 +63,9 @@ secrets:
 externalSecrets:
   enabled: false
   region: ""   # non use en local
-
+database:
+  host: mariadb-service
+  port: 3306
 
 
 

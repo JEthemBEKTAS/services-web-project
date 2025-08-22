@@ -17,6 +17,9 @@ spec:
         app: mariadb
     spec:
       serviceAccountName: {{ include "webproject.serviceAccountName" . }}
+
+      {{- $dbSecretName := required "values.secrets.db.name is required" .Values.secrets.db.name }}
+
       containers:
       - name: mariadb
         image: {{ printf "%s/%s" .Values.image.registry .Values.image.mariadb }}
@@ -29,46 +32,46 @@ spec:
           - name: MARIADB_ROOT_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: db-credentials
+                name: {{ $dbSecretName | quote }}
                 key: root-password
           - name: MYSQL_ROOT_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: db-credentials
+                name: {{ $dbSecretName | quote }}
                 key: root-password
 
           # Création DB + user à l'init (et compat MYSQL_*)
           - name: MARIADB_DATABASE
             valueFrom:
               secretKeyRef:
-                name: db-credentials
+                name: {{ $dbSecretName | quote }}
                 key: database
           - name: MYSQL_DATABASE
             valueFrom:
               secretKeyRef:
-                name: db-credentials
+                name: {{ $dbSecretName | quote }}
                 key: database
 
           - name: MARIADB_USER
             valueFrom:
               secretKeyRef:
-                name: db-credentials
+                name: {{ $dbSecretName | quote }}
                 key: username
           - name: MYSQL_USER
             valueFrom:
               secretKeyRef:
-                name: db-credentials
+                name: {{ $dbSecretName | quote }}
                 key: username
 
           - name: MARIADB_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: db-credentials
+                name: {{ $dbSecretName | quote }}
                 key: wp-password
           - name: MYSQL_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: db-credentials
+                name: {{ $dbSecretName | quote }}
                 key: wp-password
 
         livenessProbe:

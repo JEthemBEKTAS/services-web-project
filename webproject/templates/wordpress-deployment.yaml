@@ -1,4 +1,7 @@
-apiVersion: apps/v1
+{{- $dbSecretName := required "values.secrets.db.name is required"     .Values.secrets.db.name -}}
+{{- $saltName     := required "values.secrets.salts.name is required" .Values.secrets.salts.name -}}
+{{- $dbHost       := required "values.database.host is required"      .Values.database.host -}}
+{{- $dbPort       := required "values.database.port is required"      .Values.database.port -}}apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: wordpress-deployment
@@ -17,15 +20,6 @@ spec:
         image: {{ printf "%s/%s" .Values.image.registry .Values.image.wordpress }}
         imagePullPolicy: IfNotPresent
         ports: [{ containerPort: 80 }]
-
-        {{- /* 1) Résolution des noms de secrets, agnostique source (local ou ESO/AWS) */ -}}
-        {{- $dbSecretName := (dig "secrets" "db"    "name" "" .Values) | default "db-credentials" -}}
-        {{- $saltName     := (dig "secrets" "salts" "name" "" .Values) | default "wordpress-salts" -}}
-
-        {{- /* 2) Hôte/port DB paramétrables (local = service, AWS = identique si DB in-cluster; sinon change host/port dans values.aws.yaml) */ -}}
-        {{- $dbHost := (dig "database" "host" "mariadb-service" .Values) -}}
-        {{- $dbPort := (dig "database" "port" 3306 .Values) -}}
-
         env:
           - name: WORDPRESS_DB_HOST
             value: "{{ $dbHost }}:{{ $dbPort }}"
@@ -81,3 +75,4 @@ spec:
         resources:
 {{ toYaml . | indent 10 }}
         {{- end }}
+

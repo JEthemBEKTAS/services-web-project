@@ -21,7 +21,8 @@ tls:
 externalSecrets:
   enabled: true
   region: "us-east-1"   # mets la région EXACTE de ton EKS/ALB/ACM
-
+  dbKey:    "/${project}/app/db"     # ==> doit correspondre à terraform/secrets.tf
+  saltsKey: "/${project}/app/salts"
 
 database:
   host: mydb.cluster-abcdefghij.eu-west-1.rds.amazonaws.com
