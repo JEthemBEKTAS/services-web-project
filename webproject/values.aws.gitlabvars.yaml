@@ -1,0 +1,23 @@
+domain: prod.example.com
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/load-balancer-name: webproject-alb
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-1:XXXXXXXXXXXX:certificate/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+tls: { enabled: false }
+
+externalSecrets: { enabled: false }
+
+database:
+  host: mydb.cluster-abcdefghij.eu-west-1.rds.amazonaws.com
+  port: 3306
+
+secrets:
+  db:    { name: db-credentials }
+  salts: { name: wordpress-salts }

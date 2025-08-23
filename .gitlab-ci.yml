@@ -1,44 +1,133 @@
-stages: [bootstrap, tf_fmt, tf_validate, tf_plan, tf_apply, deploy, tf_destroy]
+stages: [bootstrap, terraform, deploy]
 
-variables:
-  AWS_DEFAULT_REGION: "us-east-1"
-  TF_STATE_BUCKET:    "tfstate-services-web-project-${CI_PROJECT_ID}"
-  TF_LOCK_TABLE:      "tf-lock-services-web-project"
+default:
+  image: alpine:3.20
+  before_script:
+    - set -euo pipefail
 
+# 1) CI PROVISIONNE le backend Terraform (S3 + DynamoDB) — exigence RNCP
 bootstrap_backend:
-  image: amazon/aws-cli:2.15.0
   stage: bootstrap
+  image: amazon/aws-cli:2.15.0
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
-      when: on_success
-    - when: manual
-  script: |
-    set -euo pipefail
-    echo "==> Create S3 bucket if not exists"
-    if ! aws s3api head-bucket --bucket "${TF_STATE_BUCKET}" 2>/dev/null; then
-      aws s3api create-bucket --bucket "${TF_STATE_BUCKET}" --create-bucket-configuration LocationConstraint="${AWS_DEFAULT_REGION}" || true
-      aws s3api put-bucket-versioning --bucket "${TF_STATE_BUCKET}" --versioning-configuration Status=Enabled
-      aws s3api put-public-access-block --bucket "${TF_STATE_BUCKET}" \
-        --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
-      aws s3api put-bucket-encryption --bucket "${TF_STATE_BUCKET}" \
-        --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
-      echo "Bucket created/configured."
-    else
-      echo "Bucket already exists."
-    fi
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - set -euo pipefail
+    # Noms backends dérivés du projet si non fournis
+    - BUCKET="${TF_STATE_BUCKET:-tfstate-${CI_PROJECT_ID}}"
+    - TABLE="${TF_LOCK_TABLE:-tf-lock-${CI_PROJECT_ID}}"
+    - KEY="${TF_STATE_KEY:-state.tfstate}"
+    # S3
+    - |
+      if ! aws s3api head-bucket --bucket "$BUCKET" >/dev/null 2>&1; then
+        aws s3api create-bucket --bucket "$BUCKET" --create-bucket-configuration LocationConstraint="${AWS_DEFAULT_REGION}" || true
+        aws s3api put-bucket-versioning --bucket "$BUCKET" --versioning-configuration Status=Enabled
+        aws s3api put-public-access-block --bucket "$BUCKET" \
+          --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+        aws s3api put-bucket-encryption --bucket "$BUCKET" \
+          --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+      fi
+    # DynamoDB
+    - |
+      if ! aws dynamodb describe-table --table-name "$TABLE" >/dev/null 2>&1; then
+        aws dynamodb create-table \
+          --table-name "$TABLE" \
+          --attribute-definitions AttributeName=LockID,AttributeType=S \
+          --key-schema AttributeName=LockID,KeyType=HASH \
+          --billing-mode PAY_PER_REQUEST
+        aws dynamodb wait table-exists --table-name "$TABLE"
+      fi
+    # Expose au job Terraform
+    - printf "TF_STATE_BUCKET=%s\nTF_LOCK_TABLE=%s\nTF_STATE_KEY=%s\n" "$BUCKET" "$TABLE" "$KEY" > backend.env
+  artifacts:
+    reports:
+      dotenv: backend.env
+    expire_in: 1 week
 
-    echo "==> Create DynamoDB table if not exists"
-    if ! aws dynamodb describe-table --table-name "${TF_LOCK_TABLE}" >/dev/null 2>&1; then
-      aws dynamodb create-table \
-        --table-name "${TF_LOCK_TABLE}" \
-        --attribute-definitions AttributeName=LockID,AttributeType=S \
-        --key-schema AttributeName=LockID,KeyType=HASH \
-        --billing-mode PAY_PER_REQUEST
-      echo "Waiting table to be ACTIVE..."
-      aws dynamodb wait table-exists --table-name "${TF_LOCK_TABLE}"
-    else
-      echo "Table already exists."
-    fi
+# 2) Terraform déploie l'infra AWS + publie les infos K8s/Helm pour la suite
+tf_apply:
+  stage: terraform
+  image: hashicorp/terraform:1.6
+  needs: ["bootstrap_backend"]   # récupère TF_STATE_BUCKET/LOCK_TABLE/KEY
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    # Init backend avec les valeurs produites par le job précédent
+    - terraform -chdir=terraform init \
+        -backend-config="bucket=${TF_STATE_BUCKET}" \
+        -backend-config="region=${AWS_DEFAULT_REGION}" \
+        -backend-config="dynamodb_table=${TF_LOCK_TABLE}" \
+        -backend-config="key=${TF_STATE_KEY}"
 
-    echo "==> Done"
-  needs: []
+    # (Option) passer des -var depuis variables GitLab si besoin (app_domain, rds_endpoint, ...)
+    - terraform -chdir=terraform apply -auto-approve
+
+    # ---- Publier pour Helm (dotenv + artefact) ----
+    - echo "KUBE_SERVER=$(terraform -chdir=terraform output -raw kube_server)" > tf.env
+    - echo "KUBE_TOKEN=$(terraform -chdir=terraform output -raw kube_token)"  >> tf.env
+    - echo 'KUBE_CA_PEM<<__EOF__' >> tf.env
+    - terraform -chdir=terraform output -raw kube_ca_pem >> tf.env
+    - echo '__EOF__' >> tf.env
+    - echo 'KUBECONFIG_CONTENT<<__EOF__' >> tf.env
+    - terraform -chdir=terraform output -raw kubeconfig_content >> tf.env
+    - echo '__EOF__' >> tf.env
+    - terraform -chdir=terraform output -raw helm_values_yaml > values.aws.generated.yaml
+  artifacts:
+    reports:
+      dotenv: tf.env
+    paths:
+      - values.aws.generated.yaml
+    expire_in: 1 week
+
+# 3) Helm déploie l'application — consomme uniquement ce que Terraform a produit
+deploy_app:
+  stage: deploy
+  image: dtzar/helm-kubectl:3.14.4
+  needs: ["tf_apply"]           # récupère KUBE_* / KUBECONFIG_CONTENT + values.aws.generated.yaml
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  variables:
+    KUBE_NAMESPACE: "default"
+  before_script:
+    - set -euo pipefail
+    - mkdir -p ~/.kube
+    # Contexte kubectl : priorité au kubeconfig complet
+    - |
+      if [ -n "${KUBECONFIG_CONTENT:-}" ]; then
+        printf '%s' "$KUBECONFIG_CONTENT" > ~/.kube/config
+      else
+        printf '%s' "$KUBE_CA_PEM" > ~/.kube/ca.crt
+        kubectl config set-cluster eks --server="$KUBE_SERVER" --certificate-authority=~/.kube/ca.crt --embed-certs=true
+        kubectl config set-credentials gitlab --token="$KUBE_TOKEN"
+        kubectl config set-context eks-ci --cluster=eks --user=gitlab --namespace="$KUBE_NAMESPACE"
+        kubectl config use-context eks-ci
+      fi
+    # Secrets K8s depuis variables GitLab (DB + SALTS)
+    - |
+      kubectl -n "$KUBE_NAMESPACE" create secret generic db-credentials \
+        --from-literal=username="${DB_USERNAME}" \
+        --from-literal=root-password="${DB_ROOT_PASSWORD}" \
+        --from-literal=database="${DB_DATABASE}" \
+        --from-literal=wp-password="${DB_WP_PASSWORD}" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    - |
+      kubectl -n "$KUBE_NAMESPACE" create secret generic wordpress-salts \
+        --from-literal=AUTH_KEY="${AUTH_KEY}" \
+        --from-literal=SECURE_AUTH_KEY="${SECURE_AUTH_KEY}" \
+        --from-literal=LOGGED_IN_KEY="${LOGGED_IN_KEY}" \
+        --from-literal=NONCE_KEY="${NONCE_KEY}" \
+        --from-literal=AUTH_SALT="${AUTH_SALT}" \
+        --from-literal=SECURE_AUTH_SALT="${SECURE_AUTH_SALT}" \
+        --from-literal=LOGGED_IN_SALT="${LOGGED_IN_SALT}" \
+        --from-literal=NONCE_SALT="${NONCE_SALT}" \
+        --dry-run=client -o yaml | kubectl apply -f -
+  script:
+    - helm lint ./webproject -f webproject/values.yaml -f values.aws.generated.yaml
+    - helm upgrade --install webproject ./webproject \
+        -n "$KUBE_NAMESPACE" \
+        -f webproject/values.yaml \
+        -f values.aws.generated.yaml \
+        --atomic --debug
+    - kubectl -n "$KUBE_NAMESPACE" rollout status deploy/wordpress-deployment
+    - kubectl -n "$KUBE_NAMESPACE" rollout status deploy/mariadb-deployment
+    - kubectl -n "$KUBE_NAMESPACE" get ingress webproject -o wide
